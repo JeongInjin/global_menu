@@ -37,7 +37,7 @@ class SampleDataInitializer @Autowired constructor(
                 menu.subMenus.add(subMenu)
                 menuRepository.save(subMenu)
             }
-        }
+        } // TODO WOW!
 
         // 배너
         for (i in 1..3) {
