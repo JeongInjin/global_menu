@@ -54,8 +54,7 @@ class MenuService(
         // 배너 업데이트
         if (!request.banners.isNullOrEmpty()) {
             val updatedBanners = request.banners!!.map { bannerRequest ->
-                val banner = Banner().setData(bannerRequest, menu)
-                banner.id?.let { bannerRepository.findById(it).orElse(null) } ?: banner
+                Banner().setData(bannerRequest, menu)
             }
             menu.banners.clear()
             menu.banners.addAll(updatedBanners)
