@@ -21,7 +21,7 @@ class MenuService(
     fun createMenu(request: MenuRequest): Menu {
         // 부모아이디가 넘어옮.
         val parentMenu = request.parentId?.let {
-            menuRepository.findById(it).orElseThrow { BusinessException(MENU_NOT_FOUND) }
+            getMenuOrThrow(it)
         }
 
         val menu = Menu().setData(request, parentMenu)
@@ -29,7 +29,7 @@ class MenuService(
 
         // 최상위 메뉴 & 배너 데이터가 있는 경우
         if (parentMenu == null && request.banners != null) {
-            val banners = request.banners!!.map { Banner().setData(it, savedMenu) }
+            val banners: List<Banner> = request.banners!!.map { Banner().setData(it, savedMenu) }
             savedMenu.banners.addAll(banners)
             bannerRepository.saveAll(banners)
         }
@@ -39,11 +39,11 @@ class MenuService(
 
     @Transactional
     fun updateMenu(id: Long, request: MenuRequest): Menu {
-        val menu = menuRepository.findById(id).orElseThrow { BusinessException(MENU_NOT_FOUND) }
+        val menu = getMenuOrThrow(id)
 
         // 부모객체 확인
         val parentMenu = request.parentId?.let {
-            menuRepository.findById(it).orElseThrow { BusinessException(MENU_NOT_FOUND) }
+            getMenuOrThrow(it)
         } ?: null
 
         // 배너데이터가 있다면 부모 아이디가 있는지 확인.
@@ -53,9 +53,7 @@ class MenuService(
 
         // 배너 업데이트
         if (!request.banners.isNullOrEmpty()) {
-            val updatedBanners = request.banners!!.map { bannerRequest ->
-                Banner().setData(bannerRequest, menu)
-            }
+            val updatedBanners = request.banners!!.map { Banner().setData(it, menu) }
             menu.banners.clear()
             menu.banners.addAll(updatedBanners)
         }
@@ -65,7 +63,7 @@ class MenuService(
 
     @Transactional
     fun deleteMenu(id: Long) {
-        val menu = menuRepository.findById(id).orElseThrow { BusinessException(MENU_NOT_FOUND) }
+        val menu = getMenuOrThrow(id)
         if (menu.parent != null) {
             menuRepository.delete(menu)
         } else { //최상위 메뉴라면.
@@ -77,6 +75,11 @@ class MenuService(
         }
     }
 
+    // 메뉴반환 or Throw BusinessException
+    private fun getMenuOrThrow(id: Long): Menu {
+        return menuRepository.findById(id).orElseThrow { BusinessException(MENU_NOT_FOUND) }
+    }
+
     // 부모 메뉴가 존재하는데 배너 데이터가 있다면 에러 발생.
     private fun parentBannerValid(parentMenu: Menu?, request: MenuRequest) {
         if (parentMenu != null && request.banners != null) {
@@ -84,5 +87,6 @@ class MenuService(
         }
     }
 
-    fun findSubMenus(parentId: Long): List<Menu> = menuRepository.findByParentId(parentId) // 상위 메뉴를 사용하여 하위 메뉴 찾기
+    // 상위 메뉴를 사용하여 하위 메뉴 찾기
+    fun findSubMenus(parentId: Long): List<Menu> = menuRepository.findByParentId(parentId)
 }
